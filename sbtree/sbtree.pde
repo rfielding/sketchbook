@@ -58,6 +58,7 @@ class Fraction
   private void findShowAs()
   {
     showAs = num + ":" + den;
+    /*
     if( (num-den)*(num-den) > 1 )
     {
       //It's not already a superparticular ratio
@@ -83,6 +84,7 @@ class Fraction
         }
       }
     }
+    */
   }
   
   private int gcd(int a, int b)
@@ -110,7 +112,10 @@ class Fraction
       {
         factors /= p;
         //Doing sum of primes for a measure at the moment.
-        complexity += p*p;
+        if(p>2)
+        {
+          complexity += p*p;
+        }
       } 
       lastFactors = factors; 
     }
@@ -133,7 +138,7 @@ class Fraction
     textAlign(CENTER);
     fill(color(255,255,0,(int)(255 * (20.0/complexity))));
     pushMatrix();
-    translate(cx+x,cy+y+15);
+    translate(cx+x,cy+y+5);
     if(angle < PI)
     {
       rotate(-PI/2 + angle);
@@ -175,19 +180,51 @@ SBTree sb = new SBTree(32);
 
 void setup()
 {
-  size(1000,800);
+  size(800,800);
   rectMode(CENTER);
 }
 
 void draw()
 {
   background(0);
-  smooth();
-  float tooComplex = 750;
-  float r = width * 1.7 * sb.maxComplexity/tooComplex;
+  //smooth();
+  float tooComplex = 1000;
+  float r = width * 6;
   float cx = width/2;
   float cy = height/2;
   float minr = 0;
+  float centsr=280;
+  textAlign(CENTER);
+  
+  //stroke(color(255,255,255,64));
+  //line(cx,cy,mouseX,mouseY);
+  
+  String[] note = {
+    "A","B-","B","C","C+","D","E-","E","F","F+","G","A+"
+  };
+  for(int i=0; i<1200; i++)
+  {
+      float centsr2 = 
+        centsr + 
+        ((i%100)==0?1:0)*10 + 
+        ((i%50)==0?1:0)*3 + 
+        ((i%10)==0?1:0)*5 + 
+        5;
+        
+      float angle = (2*PI*i)/1200;
+      float x1 = (float) (centsr*Math.sin(angle));
+      float y1 = (float) (centsr*-Math.cos(angle));    
+      float x2 = (float) (centsr2*Math.sin(angle));
+      float y2 = (float) (centsr2*-Math.cos(angle));    
+      stroke(color(0,0,255,64));
+      fill(color(64,64,255,128));
+      noFill();
+      int toCenter=(i%100==0)?0:1;
+      line(cx+x1*toCenter,cy+y1*toCenter,cx+x2,cy+y2);
+      if(toCenter==0)
+      text(note[(i/100)],cx+x2,cy+y2);
+  }
+    
   for(int i=0; i<sb.fractions.length; i++)
   {
     float angle = sb.fractions[i].getAngle();
@@ -197,12 +234,16 @@ void draw()
       float dist = minr + r*complexity;
       float x = (float) (dist*Math.sin(angle));
       float y = (float) (dist*-Math.cos(angle));
+      float x2 = (float) (centsr*Math.sin(angle));
+      float y2 = (float) (centsr*-Math.cos(angle));
       stroke(color(0,255,0,255));
-      ellipse(cx+x,cy+y,2,2);
       stroke(color(0,255,0,8*(1-complexity)));
       noFill();
-      line(cx,cy,cx+x,cy+y);
+      line(cx+x,cy+y,cx+x2,cy+y2);
+      stroke(color(0,255,0,3*(1-complexity)));
       ellipse(cx,cy,2*dist,2*dist);
+      stroke(color(255,0,0,255));
+      ellipse(cx+x,cy+y,1,1);
     }
   }
   for(int i=0; i<sb.fractions.length; i++)
@@ -216,7 +257,7 @@ void draw()
     }
   }
   fill(color(255,255,255,255));
-  text("Sum Of Squared Prime Factors Metric - rob.fielding@gmail.com", 200,30);
-  save("/home/rfieldin/sumofsquaredprimefactorsmetric.png");
+  text("Sum Of Squared Odd Prime Factors Metric - rob.fielding@gmail.com", 200,30);
+  //save("/home/rfieldin/sumofsquaredprimefactorsmetric.png");
 }
 
