@@ -182,7 +182,8 @@ int thisframe=0;
 
 void setup()
 {
-  size(800,800);
+  //size(800,800);
+  size(1200,1200);
   rectMode(CENTER);
 }
 
