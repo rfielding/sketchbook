@@ -137,7 +137,7 @@ class Fraction
     float x = (float) (dist*Math.sin(angle));
     float y = (float) (dist*-Math.cos(angle));
     textAlign(CENTER);
-    fill(color(255,255,0,(int)(255 * (20.0/complexity))));
+    fill(color(255,255,0,(int)(255 * (60.0/complexity))));
     pushMatrix();
     translate(cx+x,cy+y+4);
     if(angle < PI)
@@ -150,6 +150,16 @@ class Fraction
     }
     text(showAs, 0,0);
     popMatrix();
+  }
+  
+  public int getNumerator()
+  {
+    return num;
+  }
+  
+  public int getDenominator()
+  {
+    return den;
   }
 }
 
@@ -167,16 +177,25 @@ class SBTree
       {
         int k = i*depth+j;
         fractions[k] = new Fraction(i+1,j+1);
-        if(fractions[k].complexity > maxComplexity)
+        boolean isReduced = fractions[k].getNumerator() == i+1 && fractions[k].getDenominator() == j+1;
+        
+        if(isReduced)
         {
-          maxComplexity += fractions[k].complexity;
+          if(fractions[k].complexity > maxComplexity)
+          {
+            maxComplexity += fractions[k].complexity;
+          }
+        }
+        else
+        {
+          fractions[k] = null; //just throw away dups and deal with their optional existence
         }
       }
     }
   }  
 }
 
-SBTree sb = new SBTree(32);
+SBTree sb = new SBTree(36);
 
 int thisframe=0;
 
@@ -190,8 +209,8 @@ void setup()
 void draw()
 {
   background(0);
-  //smooth();
-  float tooComplex = 1000;
+  smooth();
+  float tooComplex = 10000;
   float r = width * 7;
   float cx = width/2;
   float cy = height/2;
@@ -203,7 +222,7 @@ void draw()
   //line(cx,cy,mouseX,mouseY);
   
   String[] note = {
-    "A","B-","B","C","C+","D","E-","E","F","F+","G","A+"
+    "A","B\u266D","B","C","C\u266F","D","E\u266D","E","F","F\u266F","G","A\u266D"
   };
   for(int i=0; i<1200; i++)
   {
@@ -220,7 +239,11 @@ void draw()
       float x2 = (float) (centsr2*Math.sin(angle));
       float y2 = (float) (centsr2*-Math.cos(angle));    
       stroke(color(0,0,255,64));
-      fill(color(64,64,255,128));
+      if(i%5 == 0)
+      {
+        stroke(color(255,255,255,64));
+      }
+      fill(color(127,127,255,256));
       noFill();
       int toCenter=(i%100==0)?0:1;
       line(cx+x1*toCenter,cy+y1*toCenter,cx+x2,cy+y2);
@@ -230,35 +253,43 @@ void draw()
     
   for(int i=0; i<sb.fractions.length; i++)
   {
-    float angle = sb.fractions[i].getAngle();
-    if(sb.fractions[i].complexity < tooComplex)
+    Fraction f = sb.fractions[i];
+    if(f != null)
     {
-      float complexity = sb.fractions[i].complexity / sb.maxComplexity;
-      float dist = minr + r*complexity;
-      float x = (float) (dist*Math.sin(angle));
-      float y = (float) (dist*-Math.cos(angle));
-      float x2 = (float) (centsr*Math.sin(angle));
-      float y2 = (float) (centsr*-Math.cos(angle));
-      stroke(color(0,255,0,255));
-      stroke(color(0,255,0,16*(1-complexity)));
-      line(cx+x,cy+y,cx+x2,cy+y2);
-      stroke(color(0,255,0,3*(1-complexity)));
-      noFill();
-      ellipse(cx,cy,2*dist,2*dist);
-      stroke(color(255,0,0,255));
-      fill(color(255,64,64,255));
-      ellipse(cx+x,cy+y,5,5);
-      noFill();
+      float angle = f.getAngle();
+      if(f.complexity < tooComplex)
+      {
+        float complexity = f.complexity / sb.maxComplexity;
+        float dist = minr + r*complexity;
+        float x = (float) (dist*Math.sin(angle));
+        float y = (float) (dist*-Math.cos(angle));
+        float x2 = (float) (centsr*Math.sin(angle));
+        float y2 = (float) (centsr*-Math.cos(angle));
+        stroke(color(0,255,0,255));
+        stroke(color(0,255,0,64*(1-complexity)));
+        line(cx+x,cy+y,cx+x2,cy+y2);
+        stroke(color(0,255,0,32*(1-complexity)));
+        noFill();
+        ellipse(cx,cy,2*dist,2*dist);
+        stroke(color(255,0,0,255));
+        fill(color(255,64,64,255));
+        ellipse(cx+x,cy+y,5,5);
+        noFill();
+      }
     }
   }
   for(int i=0; i<sb.fractions.length; i++)
   {
-    float angle = sb.fractions[i].getAngle();
-    if(sb.fractions[i].complexity < tooComplex)
+    Fraction f = sb.fractions[i];
+    if(f != null)
     {
-      float complexity = sb.fractions[i].complexity / sb.maxComplexity;
-      float dist = minr + r*complexity;
-      sb.fractions[i].drawAt(centsr,dist,cx,cy);
+      float angle = f.getAngle();
+      if(f.complexity < tooComplex)
+      {
+        float complexity = f.complexity / sb.maxComplexity;
+        float dist = minr + r*complexity;
+        f.drawAt(centsr,dist,cx,cy);
+      }
     }
   }
   fill(color(255,255,255,255));
