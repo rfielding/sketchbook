@@ -1,0 +1,9 @@
+body {
+    margin: 0px;
+    padding: 0px;
+}
+
+#myCanvas {
+    border: 12px solid blue;
+    border-radius: 12px;
+}
