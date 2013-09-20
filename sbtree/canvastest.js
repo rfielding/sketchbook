@@ -1,3 +1,5 @@
+
+
 var limit=36;
 
 //Generate a list of primes up to limit
@@ -85,14 +87,14 @@ function estimateComplexity(n,d) {
 var pangle = 0;
 
 function doDraw() {
-pangle=pangle+Math.random()*0.01-0.005;
+pangle=pangle+Math.random()*0.1-0.04;
 
 //context.translate(cx,cy);
 
 context.beginPath();
-context.fillStyle = '#ffffff';
+context.fillStyle = '#000000';
 context.fillRect(0,0,canvas.width,canvas.height);
-context.fillStyle = '#ffff00';
+context.strokeStyle = '#ffff00';
 context.moveTo(cx,cy);
 context.lineTo(cx,0);
 context.stroke();
@@ -149,7 +151,7 @@ for(var i=0; i < equaltemp; i++) {
 context.stroke();
 context.restore();
 
-context.lineWidth = 0.25;
+context.lineWidth = 0.125;
 for(var num=1; num<=limit; num++) {
     for(var den=1; den<=limit; den++) {
         var n = num;
@@ -199,11 +201,11 @@ for(var num=1; num<=limit; num++) {
               context.strokeStyle = '#000000';
               if(angle > Math.PI) {
                   context.rotate(Math.PI/2+angle);
-                  context.fillStyle = '#000000';
+                  context.fillStyle = '#ffff00';
                   context.fillText(n+":"+d, 0-20,0+3);
               } else {
                   context.rotate(Math.PI+Math.PI/2+angle);
-                  context.fillStyle = '#000000';
+                  context.fillStyle = '#ffff00';
                   context.fillText(n+":"+d, 0+20,0+3);
               }
               context.strokeStyle = '#ff0000';
@@ -232,3 +234,4 @@ setTimeout("doDraw()",100);
 }
 
 setTimeout(" doDraw()",100);
+
