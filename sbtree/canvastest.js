@@ -125,7 +125,7 @@ context.strokeStyle = '#000000';
 context.lineWidth = 1;
 var radiusExtra = 10;
 context.save();
-context.fillStyle = '#0000ff';
+context.fillStyle = '#ffffff';
 context.strokeStyle = '#0000ff';
 context.beginPath();
 for(var i=0; i < 100*equaltemp; i++) {
@@ -144,7 +144,12 @@ for(var i=0; i < equaltemp; i++) {
     var y1 = -(radius) * Math.cos( angle );
     var x2 =  (radius+radiusExtra) * Math.sin( angle );
     var y2 = -(radius+radiusExtra) * Math.cos( angle );
+    context.save();
+    context.translate(cx+x2,cy+y2);
+    context.rotate(-pangle);
+    context.translate(-cx-x2,-cy-y2);
     context.fillText(labels[i], cx+x2, cy+y2);
+    context.restore();
     context.moveTo(cx,cy);
     context.lineTo(cx+x1,cy+y1);
 }
@@ -200,11 +205,13 @@ for(var num=1; num<=limit; num++) {
               context.translate( x1,y1 );
               context.strokeStyle = '#000000';
               if(angle > Math.PI) {
-                  context.rotate(Math.PI/2+angle);
+                  //context.rotate(Math.PI/2+angle);
+                  context.rotate(-pangle);
                   context.fillStyle = '#ffff00';
                   context.fillText(n+":"+d, 0-20,0+3);
               } else {
-                  context.rotate(Math.PI+Math.PI/2+angle);
+                  //context.rotate(Math.PI+Math.PI/2+angle);
+                  context.rotate(-pangle);
                   context.fillStyle = '#ffff00';
                   context.fillText(n+":"+d, 0+20,0+3);
               }
