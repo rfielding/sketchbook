@@ -18,9 +18,9 @@ var cy = canvas.height/2;
 var isCounterClockwise = false;
 var radius;
 if(cx > cy) {
-   radius = cy/2;
+   radius = 0.75*cy;
 } else {
-   radius = cx/2;
+   radius = 0.75*cx;
 }
 
 
@@ -45,13 +45,13 @@ context.fillStyle = '#ffffff';
 context.fillRect(0,0,canvas.width,canvas.height);
 context.stroke();
 
-context.beginPath();
-context.lineWidth = 1;
-context.strokeStyle = '#0000ff';
+//context.beginPath();
+//context.lineWidth = 1;
+//context.strokeStyle = '#0000ff';
 //context.fillStyle = '#00ff00';
 //context.fill();
-context.arc(cx,cy, radius, 0, 2*Math.PI, isCounterClockwise);
-context.stroke();
+//context.arc(cx,cy, radius, 0, 2*Math.PI, isCounterClockwise);
+//context.stroke();
 
 
 var equaltemp = 12;
@@ -76,7 +76,18 @@ context.lineWidth = 1;
 var radiusExtra = 10;
 context.save();
 context.fillStyle = '#0000ff';
+context.strokeStyle = '#0000ff';
 context.beginPath();
+for(var i=0; i < 100*equaltemp; i++) {
+    var angle = (2*Math.PI * i) / (100*equaltemp);
+    var x1 =  (radius) * Math.sin( angle );
+    var y1 = -(radius) * Math.cos( angle );
+    var r2 = radius+radiusExtra-2*(1+(i%5!=0)+(i%10!=0)+(i%25!=0)+(i%50!=0));
+    var x2 =  r2 * Math.sin( angle );
+    var y2 = -r2 * Math.cos( angle );
+    context.moveTo(cx+x2,cy+y2);
+    context.lineTo(cx+x1,cy+y1);
+}
 for(var i=0; i < equaltemp; i++) {
     var angle = (2*Math.PI * i) / equaltemp;
     var x1 =  (radius) * Math.sin( angle );
@@ -172,9 +183,9 @@ for(var num=1; num<=limit; num++) {
             var y2 = -(radius) * Math.cos( angle );
 
             context.strokeStyle = '#ff0000';
-            context.beginPath();
-            context.arc(cx,cy, r, 0, 2*Math.PI, isCounterClockwise);
-            context.stroke();
+            //context.beginPath();
+            //context.arc(cx,cy, r, 0, 2*Math.PI, isCounterClockwise);
+            //context.stroke();
 
             context.beginPath();
             context.save();
@@ -192,7 +203,7 @@ for(var num=1; num<=limit; num++) {
               }
               context.strokeStyle = '#ff0000';
               context.fillStyle = '#ff0000';
-              context.arc(0,0, 5, 0, 2*Math.PI, isCounterClockwise);
+              context.arc(0,0, 3, 0, 2*Math.PI, isCounterClockwise);
             context.fill();
             context.stroke();
             context.restore();
@@ -205,7 +216,7 @@ for(var num=1; num<=limit; num++) {
             context.beginPath();
             var xr =  (radius) * Math.sin( angle );
             var yr = -(radius) * Math.cos( angle );
-            context.moveTo(cx+xr,cx+yr);
+            context.moveTo(cx+xr,cy+yr);
             context.lineTo(cx+x1,cy+y1);
             context.stroke();
         }    
