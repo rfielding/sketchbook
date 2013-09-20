@@ -1,28 +1,20 @@
-var canvas = document.getElementById('myCanvas');
-var context = canvas.getContext('2d');
+var limit=36;
 
-//context.fillStyle = '#000000';
-context.fillStyle = '#ff0000';
-context.textAlign = "center";
-/*
-context.beginPath();
-context.moveTo(100, 150);
-context.lineTo(450, 50);
-context.lineWidth = 10;
-context.lineCap = 'round';
-context.strokeStyle = '#ffff00';
-context.stroke();
-*/
-var cx = canvas.width/2;
-var cy = canvas.height/2;
-var isCounterClockwise = false;
-var radius;
-if(cx > cy) {
-   radius = 0.75*cy;
-} else {
-   radius = 0.75*cx;
+//Generate a list of primes up to limit
+var primes = new Array();
+var primeCount = 0;
+for(var p=2; p<limit; p++) {
+    var isPrime = true;
+    for(var n=2; isPrime && n<p; n++) {
+        if(p%n == 0) {
+            isPrime = false;    
+        } 
+    }
+    if(isPrime == true) {
+        primes.push(p);
+        primeCount++;
+    }    
 }
-
 
 var sharp = "#";
 var flat  = "-";
@@ -40,19 +32,75 @@ labels[9]  = "F"+sharp;
 labels[10] = "G";
 labels[11] = "G"+sharp;
 
+function gcd(n,d) {
+    while(d != 0) {
+        var z = n % d;
+        n = d;
+        d = z;
+    }
+    return n; 
+}
+
+function normalizeComplexity(n,d,c) {
+    return c / (limit);
+}
+
+//Do a squared some of odd n*d prime factors
+function estimateComplexity(n,d) {
+    var answer = 0.0;
+    var nd = n*d;
+    for(var i=0; i < primeCount && nd > 1; i++) {
+        var p = primes[i];
+        while(nd%p == 0 && nd > 1) {
+            nd /= p;
+            if(p%2 == 1) {
+                answer += p*p;
+            } 
+        }
+    }
+
+    return answer; 
+}
+
+
+//function canvasSetup() {
+    var canvas = document.getElementById('myCanvas');
+    var context = canvas.getContext('2d');
+    var cx = canvas.width/2;
+    var cy = canvas.height/2;
+    var isCounterClockwise = false;
+    var radius;
+    if(cx > cy) {
+       radius = 0.75*cy;
+    } else {
+       radius = 0.75*cx;
+    }
+    context.fillStyle = '#ff0000';
+    context.textAlign = "center";
+//}
+
+
+
+
+var pangle = 0;
+
+function doDraw() {
+pangle=pangle+Math.random()*0.01-0.005;
+
+//context.translate(cx,cy);
+
 context.beginPath();
 context.fillStyle = '#ffffff';
 context.fillRect(0,0,canvas.width,canvas.height);
+context.fillStyle = '#ffff00';
+context.moveTo(cx,cy);
+context.lineTo(cx,0);
 context.stroke();
 
-//context.beginPath();
-//context.lineWidth = 1;
-//context.strokeStyle = '#0000ff';
-//context.fillStyle = '#00ff00';
-//context.fill();
-//context.arc(cx,cy, radius, 0, 2*Math.PI, isCounterClockwise);
-//context.stroke();
-
+context.save();
+context.translate(cx,cy);
+context.rotate(pangle);
+context.translate(-cx,-cy);
 
 var equaltemp = 12;
 var increments = equaltemp*10;
@@ -101,55 +149,6 @@ for(var i=0; i < equaltemp; i++) {
 context.stroke();
 context.restore();
 
-function gcd(n,d) {
-    while(d != 0) {
-        var z = n % d;
-        n = d;
-        d = z;
-    }
-    return n; 
-}
-
-var limit=36;
-
-//Generate a list of primes up to limit
-var primes = new Array();
-var primeCount = 0;
-for(var p=2; p<limit; p++) {
-    var isPrime = true;
-    for(var n=2; isPrime && n<p; n++) {
-        if(p%n == 0) {
-            isPrime = false;    
-        } 
-    }
-    if(isPrime == true) {
-        primes.push(p);
-        primeCount++;
-    }    
-}
-
-//Do a squared some of odd n*d prime factors
-function estimateComplexity(n,d) {
-    var answer = 0.0;
-    var nd = n*d;
-    for(var i=0; i < primeCount && nd > 1; i++) {
-        var p = primes[i];
-        while(nd%p == 0 && nd > 1) {
-            nd /= p;
-            if(p%2 == 1) {
-                answer += p*p;
-            } 
-        }
-    }
-
-    return answer; 
-}
-
-function normalizeComplexity(n,d,c) {
-    return c / (limit);
-}
-
-
 context.lineWidth = 0.25;
 for(var num=1; num<=limit; num++) {
     for(var den=1; den<=limit; den++) {
@@ -157,6 +156,7 @@ for(var num=1; num<=limit; num++) {
         var d = den;
 
         //move value from range [1,2)
+        var octDrops = 0;
         var val = (1.0 * n)/d;
         while( val < 1.0 || val >= 2.0) {
             if( val < 1.0 ) {
@@ -164,14 +164,19 @@ for(var num=1; num<=limit; num++) {
                 n   *= 2;
             }
             if( val >= 2.0) {
+                if(d%2==0) {
+                    octDrops += 1;
+                }
                 val /= 2;
                 d   *= 2;
             }
         }
 
         //See if it's the lowest representation
+        //If we dropped octaves with an even denominator,
+        //then it was already accounted for in earlier iteration
         var g = gcd(n,d);
-        if(g == 1 || (n==1 && d==1)) {
+        if(g == 1 || (n==1 && d==1) && octDrops<2) {
             //compute its complexity
             var complexity = estimateComplexity(n,d);
             var ncomplexity = normalizeComplexity(n,d,complexity); 
@@ -222,3 +227,8 @@ for(var num=1; num<=limit; num++) {
         }    
     }
 }
+context.restore();
+setTimeout("doDraw()",100);
+}
+
+setTimeout(" doDraw()",100);
