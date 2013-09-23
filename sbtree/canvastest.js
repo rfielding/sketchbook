@@ -2,6 +2,7 @@
 
 var tunerContext = {
     limit: 81
+    ,density: 0.9
     ,pangle: 0
 
     ,findPrimes : function() {
@@ -75,9 +76,9 @@ var tunerContext = {
         this.cy = this.canvas.height/2;
         this.radius;
         if(this.cx > this.cy) {
-            this.radius = 0.8*this.cy;
+            this.radius = this.density*this.cy;
         } else {
-            this.radius = 0.8*this.cx;
+            this.radius = this.density*this.cx;
         }
         this.context.fillStyle = '#ff0000';
         this.context.textAlign = "center";
@@ -85,8 +86,8 @@ var tunerContext = {
 
     ,doCentsBackgroundFine: function() {
         this.context.strokeStyle = '#000000';
-        this.context.lineWidth = 1;
-        this.radiusExtra = 20;
+        this.context.lineWidth = 0.5;
+        this.radiusExtra = 10;
         var increments = 1200;
         this.context.fillStyle = '#ff00ff';
         this.context.strokeStyle = '#0000ff';
@@ -254,8 +255,8 @@ var tunerContext = {
 
     ,doDraw: function() {
         this.doClear();
-        this.doDrawIntonationWheel();
         this.doPitchRatios();
+        this.doDrawIntonationWheel();
         this.doDrawThisMark();
     }
 
@@ -269,6 +270,7 @@ var tunerContext = {
 function doTuner() {
     tunerContext.init();
     tunerContext.doDraw();
+    setTimeout("reDraw()", 100);
 }
 
 function reDraw() {
@@ -277,5 +279,4 @@ function reDraw() {
     setTimeout("reDraw()", 100);
 }
 
-setTimeout("reDraw()", 100);
 
