@@ -89,17 +89,17 @@ var tunerContext = {
 
     ,doCentsBackgroundFine: function() {
         this.context.strokeStyle = '#000000';
-        this.context.lineWidth = 0.5;
-        this.radiusExtra = 12;
-        var increments = 1200;
+        this.context.lineWidth = 1;
+        this.radiusExtra = 10;
+        var increments = 120;
         this.context.fillStyle = '#ff00ff';
-        this.context.strokeStyle = '#ffffff';
+        this.context.strokeStyle = '#8888ff';
         this.context.beginPath();
         for(var i=0; i < increments; i++) {
             var angle = (2*Math.PI * i) / increments;
             var x1 =  this.radius * Math.sin( angle );
             var y1 = -this.radius * Math.cos( angle );
-            var r2 = this.radius + this.radiusExtra - 2*(2+(i%5!=0)+(i%10!=0)+(i%25!=0)+(i%50!=0));
+            var r2 = this.radius + 5 + this.radiusExtra * (increments%5==0);  
             var x2 =  r2 * Math.sin( angle );
             var y2 = -r2 * Math.cos( angle );
             this.context.moveTo( this.cx + x2, this.cy + y2);
@@ -129,7 +129,7 @@ var tunerContext = {
         var increments = 12;
         var radius = this.radius + 15;
         this.context.fillStyle = "#8888ff";
-        this.context.font = 'Bold 16pt Verdana';
+        this.context.font = 'Bold 18pt Verdana';
         for(var i=0; i < increments; i++) {
             var angle = (2*Math.PI * i) / increments;
             var x1 =  radius * Math.sin( angle );
