@@ -2,7 +2,7 @@
 
 var tunerContext = {
     limit: 81
-    ,density: 0.9
+    ,density: 1.0
     ,pangle: 0
 
     ,findPrimes : function() {
@@ -23,8 +23,10 @@ var tunerContext = {
     }
 
     ,findLabels : function() {
-        var sharp = "#";
-        var flat  = "-";
+        //var sharp = "#";
+        //var flat  = "-";
+        var sharp = "♯";
+        var flat  = "♭";
         this.labels = new Array();
         this.labels[0]  = "A";
         this.labels[1]  = "B"+flat;
@@ -72,6 +74,7 @@ var tunerContext = {
     ,canvasSetup: function() {
         this.canvas = document.getElementById('myCanvas');
         this.context = this.canvas.getContext('2d');
+        this.context.font = '8pt Verdana';
         this.cx = this.canvas.width/2;
         this.cy = this.canvas.height/2;
         this.radius;
@@ -87,16 +90,16 @@ var tunerContext = {
     ,doCentsBackgroundFine: function() {
         this.context.strokeStyle = '#000000';
         this.context.lineWidth = 0.5;
-        this.radiusExtra = 10;
+        this.radiusExtra = 12;
         var increments = 1200;
         this.context.fillStyle = '#ff00ff';
-        this.context.strokeStyle = '#0000ff';
+        this.context.strokeStyle = '#ffffff';
         this.context.beginPath();
         for(var i=0; i < increments; i++) {
             var angle = (2*Math.PI * i) / increments;
             var x1 =  this.radius * Math.sin( angle );
             var y1 = -this.radius * Math.cos( angle );
-            var r2 = this.radius + this.radiusExtra - 2*(1+(i%5!=0)+(i%10!=0)+(i%25!=0)+(i%50!=0));
+            var r2 = this.radius + this.radiusExtra - 2*(2+(i%5!=0)+(i%10!=0)+(i%25!=0)+(i%50!=0));
             var x2 =  r2 * Math.sin( angle );
             var y2 = -r2 * Math.cos( angle );
             this.context.moveTo( this.cx + x2, this.cy + y2);
@@ -125,7 +128,8 @@ var tunerContext = {
         this.context.beginPath();
         var increments = 12;
         var radius = this.radius + 15;
-        this.context.fillStyle = "#ffffff";
+        this.context.fillStyle = "#8888ff";
+        this.context.font = 'Bold 16pt Verdana';
         for(var i=0; i < increments; i++) {
             var angle = (2*Math.PI * i) / increments;
             var x1 =  radius * Math.sin( angle );
@@ -246,37 +250,68 @@ var tunerContext = {
         this.context.beginPath();
         this.context.lineWidth = 2;
         this.context.strokeStyle = 'rgba(255,255,255,128)';
-        var x1 = this.radius * 2 * Math.sin( this.pangle );
-        var y1 = this.radius * 2 * -Math.cos( this.pangle );
+        var x1 = this.radius * 4 * Math.sin( this.pangle );
+        var y1 = this.radius * 4 * -Math.cos( this.pangle );
         this.context.moveTo( this.cx, this.cy );
         this.context.lineTo( this.cx + x1, this.cy + y1 );
         this.context.stroke();
+
+    }
+
+    ,doDrawCentsLegend: function(x,y) {
+        this.context.save();
+        this.context.fillStyle = 'rgba(255,255,255,128)';
+        this.context.textAlign = "left";
+        this.context.font = 'Bold 12pt Verdana';
+        var angle = this.pangle;
+        while(angle < 0) {
+          angle += 2*Math.PI;
+        }
+        var cents = (Math.floor(120000 * angle / (2*Math.PI)))/100;
+        this.context.beginPath();
+        this.context.fillText(cents+"¢ from root",x,y);
+        var note = ((Math.floor((cents-50)/100))+1)%12;
+        var centsoff = (Math.floor(100*(cents - note*100)))/100;
+        this.context.fillText(this.labels[note]+" "+centsoff+"¢",x,y+20);
+        this.context.fill();
+        this.context.restore();
     }
 
     ,doDraw: function() {
+        this.context.save();
+        var x1 =  this.radius * Math.sin( this.pangle );
+        var y1 = -this.radius * Math.cos( this.pangle );
         this.doClear();
+        this.context.translate( -x1, -y1 );
         this.doPitchRatios();
         this.doDrawIntonationWheel();
         this.doDrawThisMark();
+        this.context.restore();
+        this.doDrawCentsLegend(75,50);
+    }
+
+    ,audioSetup: function() {
+      this.audioContext = new AudioContext();
     }
 
     ,init : function() {
         this.findPrimes();
         this.findLabels();
         this.canvasSetup();
+        this.audioSetup();
     }
 }
 
 function doTuner() {
     tunerContext.init();
     tunerContext.doDraw();
-    setTimeout("reDraw()", 100);
+    setTimeout("reDraw()", 0);
 }
 
 function reDraw() {
-    tunerContext.pangle += Math.random()*0.1 - 0.05;
+    tunerContext.pangle += Math.random()*0.1 - 0.02;
     tunerContext.doDraw();
-    setTimeout("reDraw()", 100);
+    setTimeout("reDraw()", 0);
 }
 
 
