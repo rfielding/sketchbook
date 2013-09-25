@@ -267,12 +267,17 @@ var tunerContext = {
         while(angle < 0) {
           angle += 2*Math.PI;
         }
+        while(angle >= 2*Math.PI) {
+          angle -= 2*Math.PI;
+        }
         var cents = (Math.floor(120000 * angle / (2*Math.PI))%120000)/100;
+        var hertz = (Math.floor(44000 * Math.pow(2,angle/(2*Math.PI))))/100;
         this.context.beginPath();
         this.context.fillText(cents+"¢ from root",x,y);
         var note = ((Math.floor((cents-50)/100))+1)%12;
         var centsoff = (Math.floor(100*(cents - note*100)))/100;
         this.context.fillText(this.labels[note]+" "+centsoff+"¢",x,y+20);
+        this.context.fillText(hertz+"hz",x,y+40);
         this.context.fill();
         this.context.restore();
     }
