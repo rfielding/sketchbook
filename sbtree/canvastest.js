@@ -296,7 +296,14 @@ var tunerContext = {
     }
 
     ,audioSetup: function() {
-      this.audioContext = new AudioContext();
+        try {
+            this.audioContext = new AudioContext();
+        }
+        catch(err) {
+            if(console && console.log) {
+                console.log(err);
+            }
+        }
     }
 
     ,init : function() {
