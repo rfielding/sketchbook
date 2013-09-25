@@ -267,7 +267,7 @@ var tunerContext = {
         while(angle < 0) {
           angle += 2*Math.PI;
         }
-        var cents = (Math.floor(120000 * angle / (2*Math.PI)))/100;
+        var cents = (Math.floor(120000 * angle / (2*Math.PI))%120000)/100;
         this.context.beginPath();
         this.context.fillText(cents+"¢ from root",x,y);
         var note = ((Math.floor((cents-50)/100))+1)%12;
