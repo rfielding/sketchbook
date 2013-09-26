@@ -2,6 +2,7 @@
 
 var tunerContext = {
     limit: 81
+    ,tooComplex: 3.0
     ,density: 1.0
     ,pangle: 0
 
@@ -155,9 +156,8 @@ var tunerContext = {
         this.doCentsLabels();
      }
 
-    ,doPitchRatios: function() {
-        this.context.lineWidth = 0.125;
-
+    ,doPrecomputePitchRatios: function() {
+        this.fractions = new Array();
         for(var num = 1; num <= this.limit; num++) {
             for(var den = 1; den <= this.limit; den++) {
                 var n = num;
@@ -188,49 +188,81 @@ var tunerContext = {
                     //compute its complexity
                     var complexity = this.estimateComplexity(n,d);
                     var ncomplexity = this.normalizeComplexity(n,d,complexity); 
-                    var angle = 2 * Math.PI * Math.log(val)/Math.log(2);
-                    var r  = this.radius * ncomplexity;
-                    var x1 =  r * Math.sin( angle );
-                    var y1 = -r * Math.cos( angle );
-                    var x2 =  (this.radius) * Math.sin( angle );
-                    var y2 = -(this.radius) * Math.cos( angle );
-
-                    this.context.strokeStyle = '#ff0000';
-
-                    this.context.beginPath();
-                    this.context.save();
-                    this.context.translate( this.cx,this.cy );
-                    this.context.translate( x1,y1 );
-                    this.context.strokeStyle = '#000000';
-                    if(angle > Math.PI) {
-                        this.context.rotate( Math.PI/2 + angle );
-                        this.context.fillStyle = '#ffff00';
-                        this.context.fillStyle = '#ffff00';
-                        this.context.fillText( n+":"+d, 0-20, 0+3 );
-                    } else {
-                        this.context.rotate( -Math.PI/2 + angle );
-                        this.context.fillStyle = '#ffff00';
-                        this.context.fillText( n+":"+d, 0+20, 0+3 );
+                    if(ncomplexity < this.tooComplex) {
+                        var angle = 2 * Math.PI * Math.log(val)/Math.log(2);
+                        var fraction = {};
+                        fraction.ncomplexity = ncomplexity;
+                        fraction.angle = angle;
+                        fraction.num = n;
+                        fraction.den = d; 
+                        this.fractions.push(fraction);
                     }
-
-                    this.context.strokeStyle = '#ff0000';
-                    this.context.fillStyle = '#ff0000';
-                    var isCounterClockwise = false;
-                    this.context.arc(0, 0, 3, 0, 2*Math.PI, isCounterClockwise);
-
-                    this.context.fill();
-                    this.context.stroke();
-                    this.context.restore();
-
-                    this.context.lineWidth = 0.25 / (1+ncomplexity);
-                    this.context.strokeStyle = '#00ff00';
-                    this.context.beginPath();
-                    this.context.arc( this.cx, this.cy, r, 0, 2*Math.PI, isCounterClockwise);
-                    this.context.moveTo( this.cx + x1, this.cy + y1);
-                    this.context.lineTo( this.cx + x2, this.cy + y2);
-                    this.context.stroke();
                 }
             }
+        }
+    }
+
+    ,forEachFraction: function(fun) {
+        for(var f=0; f < this.fractions.length; f++) {
+            var ncomplexity = this.fractions[f].ncomplexity;
+            var angle = this.fractions[f].angle;
+            var n = this.fractions[f].num;
+            var d = this.fractions[f].den;
+            var r  = this.radius * ncomplexity;
+            var x1 =  r * Math.sin( angle );
+            var y1 = -r * Math.cos( angle );
+            var x2 =  (this.radius) * Math.sin( angle );
+            var y2 = -(this.radius) * Math.cos( angle );
+        }
+    }
+
+    ,doPitchRatios: function() {
+        this.context.lineWidth = 0.125;
+        for(var f=0; f < this.fractions.length; f++) {
+            var ncomplexity = this.fractions[f].ncomplexity;
+            var angle = this.fractions[f].angle;
+            var n = this.fractions[f].num;
+            var d = this.fractions[f].den;
+            var r  = this.radius * ncomplexity;
+            var x1 =  r * Math.sin( angle );
+            var y1 = -r * Math.cos( angle );
+            var x2 =  (this.radius) * Math.sin( angle );
+            var y2 = -(this.radius) * Math.cos( angle );
+
+            this.context.strokeStyle = '#ff0000';
+
+            this.context.beginPath();
+            this.context.save();
+            this.context.translate( this.cx,this.cy );
+            this.context.translate( x1,y1 );
+            this.context.strokeStyle = '#000000';
+            if(angle > Math.PI) {
+                this.context.rotate( Math.PI/2 + angle );
+                this.context.fillStyle = '#ffff00';
+                this.context.fillStyle = '#ffff00';
+                this.context.fillText( n+":"+d, 0-20, 0+3 );
+            } else {
+                this.context.rotate( -Math.PI/2 + angle );
+                this.context.fillStyle = '#ffff00';
+                this.context.fillText( n+":"+d, 0+20, 0+3 );
+            }
+
+            this.context.strokeStyle = '#ff0000';
+            this.context.fillStyle = '#ff0000';
+            var isCounterClockwise = false;
+            this.context.arc(0, 0, 3, 0, 2*Math.PI, isCounterClockwise);
+
+            this.context.fill();
+            this.context.stroke();
+            this.context.restore();
+
+            this.context.lineWidth = 0.25 / (1+ncomplexity);
+            this.context.strokeStyle = '#00ff00';
+            this.context.beginPath();
+            this.context.arc( this.cx, this.cy, r, 0, 2*Math.PI, isCounterClockwise);
+            this.context.moveTo( this.cx + x1, this.cy + y1);
+            this.context.lineTo( this.cx + x2, this.cy + y2);
+            this.context.stroke();
         }
     }
 
@@ -308,6 +340,7 @@ var tunerContext = {
 
     ,init : function() {
         this.findPrimes();
+        this.doPrecomputePitchRatios();
         this.findLabels();
         this.canvasSetup();
         this.audioSetup();
