@@ -258,6 +258,11 @@ var tunerContext = {
         this.forEachFraction(this.context,drawTextBody);
         this.context.fill();
 
+        this.context.strokeStyle = '#ffffff';
+        this.context.beginPath();
+        this.context.moveTo( this.cx, this.cy);
+        this.context.lineTo( this.cx, this.cy - 800);
+        this.context.stroke();
     }
 
     ,doDrawIntonationWheel: function() {
