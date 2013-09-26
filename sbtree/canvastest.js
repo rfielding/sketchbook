@@ -209,10 +209,10 @@ var tunerContext = {
             var n = this.fractions[f].num;
             var d = this.fractions[f].den;
             var r  = this.radius * ncomplexity;
-            var x1 =  r * Math.sin( angle );
-            var y1 = -r * Math.cos( angle );
             var x2 =  (this.radius) * Math.sin( angle );
             var y2 = -(this.radius) * Math.cos( angle );
+            var x1 =  x2 * ncomplexity;
+            var y1 =  y2 * ncomplexity;
             fun(ctx,this.cx,this.cy,ncomplexity,angle,n,d,r,x1,y1,x2,y2);
         }
     }
@@ -224,53 +224,38 @@ var tunerContext = {
             ctx.save();
             ctx.translate( cx,cy );
             ctx.translate( x1,y1 );
-            ctx.strokeStyle = '#000000';
+            ctx.fillStyle = '#ffff00';
             if(angle > Math.PI) {
                 ctx.rotate( Math.PI/2 + angle );
-                ctx.fillStyle = '#ffff00';
-                ctx.fillStyle = '#ffff00';
-                ctx.fillText( n+":"+d, 0-20, 0+3 );
+                ctx.fillText( n+":"+d, 0-20, 0+3.25 );
             } else {
                 ctx.rotate( -Math.PI/2 + angle );
-                ctx.fillStyle = '#ffff00';
-                ctx.fillText( n+":"+d, 0+20, 0+3 );
+                ctx.fillText( n+":"+d, 0+20, 0+3.25 );
             }
+            ctx.fillStyle = '#ff0000';
+            ctx.fillText( "|", 0, 0+3.25 );
             ctx.restore();
         }
 
         var lineBody = function(ctx,cx,cy,ncomplexity,angle,n,d,r,x1,y1,x2,y2) {
-            ctx.lineWidth = 0.25 / (1+ncomplexity);
             ctx.moveTo( cx + x1, cy + y1);
             ctx.lineTo( cx + x2, cy + y2);
-        }
-
-        var lineArcBody = function(ctx,cx,cy,ncomplexity,angle,n,d,r,x1,y1,x2,y2) {
-            ctx.lineWidth = 0.25 / (1+ncomplexity);
-            ctx.arc( cx, cy, r, 0, 2*Math.PI, false);
         }
 
         var dotsBody = function(ctx,cx,cy,ncomplexity,angle,n,d,r,x1,y1,x2,y2) {
             ctx.arc(cx + x1, cy + y1, 3, 0, 2*Math.PI, false);
         }
 
-        this.context.beginPath();
-        this.forEachFraction(this.context,drawTextBody);
-        this.context.fill();
+        this.context.strokeStyle = '#00ff00';
 
         this.context.beginPath();
-        this.context.strokeStyle = '#00ff00';
         this.forEachFraction(this.context,lineBody);
         this.context.stroke();
 
         this.context.beginPath();
-        this.context.strokeStyle = '#00ff00';
-        this.forEachFraction(this.context,lineArcBody);
-        this.context.stroke();
-
-        this.context.beginPath();
-        this.context.fillStyle = '#ff0000';
-        this.forEachFraction(this.context,dotsBody);
+        this.forEachFraction(this.context,drawTextBody);
         this.context.fill();
+
     }
 
     ,doDrawIntonationWheel: function() {
@@ -361,7 +346,7 @@ function doTuner() {
 }
 
 function reDraw() {
-    tunerContext.pangle += Math.random()*0.1 - 0.02;
+    tunerContext.pangle += Math.random()*0.05 - 0.01;
     tunerContext.doDraw();
     setTimeout("reDraw()", 0);
 }
