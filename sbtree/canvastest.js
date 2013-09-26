@@ -5,6 +5,8 @@ var tunerContext = {
     ,tooComplex: 3.0
     ,density: 1.0
     ,pangle: 0
+    ,pangledx1: 0
+    ,pangledx2: 0
 
     ,findPrimes : function() {
         this.primes = new Array()
@@ -346,7 +348,13 @@ function doTuner() {
 }
 
 function reDraw() {
-    tunerContext.pangle += Math.random()*0.05 - 0.01;
+    //Make the needle bounce around with acceleration,velocity,position
+    tunerContext.pangledx2 += Math.random()*0.002 - 0.001;
+    tunerContext.pangledx1 += tunerContext.pangledx2;
+    tunerContext.pangle += tunerContext.pangledx1;
+    tunerContext.pangledx2 *= 0.9;
+    tunerContext.pangledx1 *= 0.9;
+
     tunerContext.doDraw();
     setTimeout("reDraw()", 0);
 }
