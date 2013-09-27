@@ -5,18 +5,18 @@ function trylog(msg) {
 }
 
 var micInputContext = {
-    buflen: 1024
+    buflen: 2048
     ,bins: 0
 
     ,audioAnalyse: function() {
         if(this.audioContext) {
-            this.analyser.getByteFrequencyData(this.buf);
+            this.analyser.getFloatFrequencyData(this.buf);
             this.bins = this.analyser.frequencyBinCount;
         }
     }
  
     ,audioSetup: function() {
-        this.buf = new Uint8Array(this.buflen);
+        this.buf = new Float32Array(this.buflen);
         if(navigator.getUserMedia) {
             var me = this;
             var args = {audio:true};
@@ -367,13 +367,27 @@ var tunerContext = {
         this.context.beginPath();
         var w = this.canvas.width;
         var h = this.canvas.height;
-        var bins = micInputContext.bins;
+        var bins = micInputContext.bins/2;
+        var diff = 1;
+        var maxi = 0;
+        var maxv = 0;
         for(var i=0; i<bins; i++) {
             var n = (1.0*i*w)/bins;
             this.context.moveTo(n , h);
-            this.context.lineTo(n , h - micInputContext.buf[i]*0.25);
+            var m = micInputContext.buf[i];
+            var v = (m - micInputContext.analyser.minDecibels) * diff;
+            if(v > maxv) {
+                maxv = v;
+                maxi = i;
+            }
+            this.context.lineTo(n , h - v);
         }
         this.context.stroke();
+         
+        this.context.fillStyle = 'rgba(255,255,255,127)';
+        this.context.beginPath();
+        this.context.fillText(""+maxi, 75, this.canvas.height - 50);
+        this.context.fill();
     }
 
     ,init : function() {
