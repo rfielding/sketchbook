@@ -1,4 +1,27 @@
+function trylog(msg) {
+    if(console && console.log) {
+        console.log(msg);
+    }
+}
 
+var micInputContext = {
+    buflen: 1024
+ 
+    ,audioSetup: function() {
+        this.buf = new Uint8Array(this.buflen);
+        if(navigator.webkitGetUserMedia) {
+            var me = this;
+            var args = {audio:true};
+            var callback = function(stream) {
+                trylog("getUserMedia succeed");
+            }
+            var failcallback = function(stream) {
+                trylog("getUserMedia fail");
+            }
+            navigator.webkitGetUserMedia(args, callback, failcallback);
+        }
+    }
+}
 
 var tunerContext = {
     limit: 81
@@ -326,30 +349,23 @@ var tunerContext = {
         this.doDrawCentsLegend(75,50);
     }
 
-    ,audioSetup: function() {
-        try {
-            this.audioContext = new AudioContext();
-        }
-        catch(err) {
-            if(console && console.log) {
-                console.log(err);
-            }
-        }
-    }
 
     ,init : function() {
         this.findPrimes();
         this.doPrecomputePitchRatios();
         this.findLabels();
         this.canvasSetup();
-        this.audioSetup();
     }
 }
 
 function doTuner() {
     tunerContext.init();
     tunerContext.doDraw();
-    setTimeout("reDraw()", 0);
+    if(!window.requestAnimationFrame) {
+        window.requestAnimationFrame = window.webkitRequestAnimationFrame;
+    } 
+    window.requestAnimationFrame(reDraw);
+    micInputContext.audioSetup();
 }
 
 function reDraw() {
@@ -361,7 +377,6 @@ function reDraw() {
     tunerContext.pangledx1 *= 0.9;
 
     tunerContext.doDraw();
-    setTimeout("reDraw()", 0);
+    window.requestAnimationFrame(reDraw);
 }
-
 
