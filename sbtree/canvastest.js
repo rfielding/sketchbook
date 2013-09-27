@@ -6,19 +6,31 @@ function trylog(msg) {
 
 var micInputContext = {
     buflen: 1024
+    ,bins: 0
+
+    ,audioAnalyse: function() {
+        if(this.audioContext) {
+            this.analyser.getByteFrequencyData(this.buf);
+            this.bins = this.analyser.frequencyBinCount;
+        }
+    }
  
     ,audioSetup: function() {
         this.buf = new Uint8Array(this.buflen);
-        if(navigator.webkitGetUserMedia) {
+        if(navigator.getUserMedia) {
             var me = this;
             var args = {audio:true};
             var callback = function(stream) {
-                trylog("getUserMedia succeed");
+                trylog("open mic succeed");
+                me.audioContext = new AudioContext();
+                me.microphone = me.audioContext.createMediaStreamSource(stream);
+                me.analyser = me.audioContext.createAnalyser();
+                me.microphone.connect(me.analyser);
             }
             var failcallback = function(stream) {
-                trylog("getUserMedia fail");
+                trylog("open mic fail");
             }
-            navigator.webkitGetUserMedia(args, callback, failcallback);
+            navigator.getUserMedia(args, callback, failcallback);
         }
     }
 }
@@ -347,8 +359,22 @@ var tunerContext = {
         this.doDrawThisMark();
         this.context.restore();
         this.doDrawCentsLegend(75,50);
+        this.doDrawFFT();
     }
 
+    ,doDrawFFT: function() {
+        this.context.strokeStyle = 'rgba(255,255,255,16)';
+        this.context.beginPath();
+        var w = this.canvas.width;
+        var h = this.canvas.height;
+        var bins = micInputContext.bins;
+        for(var i=0; i<bins; i++) {
+            var n = (1.0*i*w)/bins;
+            this.context.moveTo(n , h);
+            this.context.lineTo(n , h - micInputContext.buf[i]*0.25);
+        }
+        this.context.stroke();
+    }
 
     ,init : function() {
         this.findPrimes();
@@ -358,17 +384,31 @@ var tunerContext = {
     }
 }
 
-function doTuner() {
-    tunerContext.init();
-    tunerContext.doDraw();
+function doMonkeyPatching() {
     if(!window.requestAnimationFrame) {
         window.requestAnimationFrame = window.webkitRequestAnimationFrame;
+    }
+    if(!window.requestAnimationFrame) {
+        window.requestAnimationFrame = setTimeout;
+    }
+    if(!window.AudioContext) {
+        window.AudioContext = window.webkitAudioContext;
+    }
+    if(!navigator.getUserMedia) {
+        navigator.getUserMedia = navigator.webkitGetUserMedia;
     } 
+}
+
+function doTuner() {
+    doMonkeyPatching();
+    tunerContext.init();
+    tunerContext.doDraw();
     window.requestAnimationFrame(reDraw);
     micInputContext.audioSetup();
 }
 
 function reDraw() {
+    micInputContext.audioAnalyse();
     //Make the needle bounce around with acceleration,velocity,position
     tunerContext.pangledx2 += Math.random()*0.002 - 0.001;
     tunerContext.pangledx1 += tunerContext.pangledx2;
