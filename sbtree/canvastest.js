@@ -471,13 +471,15 @@ function doTuner() {
 function reDraw() {
     micInputContext.audioAnalyse();
     //Make the needle bounce around with acceleration,velocity,position
-    //tunerContext.pangledx2 += Math.random()*0.002 - 0.001;
-    //tunerContext.pangledx1 += tunerContext.pangledx2;
-    //tunerContext.pangle += tunerContext.pangledx1;
-    //tunerContext.pangledx2 *= 0.9;
-    //tunerContext.pangledx1 *= 0.9;
-    //tunerContext.pangle = 2*Math.PI*Math.log(1+tunerContext.avgFreq/100)/Math.log(2);
-    tunerContext.pangle = 2*Math.PI*Math.log((1+tunerContext.avgFreq)/100)/Math.log(2);
+    if(tunerContext.avgMaxi==0.0) {
+        tunerContext.pangledx2 += Math.random()*0.002 - 0.001;
+        tunerContext.pangledx1 += tunerContext.pangledx2;
+        tunerContext.pangle += tunerContext.pangledx1;
+        tunerContext.pangledx2 *= 0.9;
+        tunerContext.pangledx1 *= 0.9;
+    } else {
+        tunerContext.pangle = 2*Math.PI*Math.log((1+tunerContext.avgFreq)/100)/Math.log(2);
+    }
     tunerContext.doDraw();
     window.requestAnimationFrame(reDraw);
 }
