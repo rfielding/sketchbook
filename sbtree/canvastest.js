@@ -476,7 +476,8 @@ function reDraw() {
     //tunerContext.pangle += tunerContext.pangledx1;
     //tunerContext.pangledx2 *= 0.9;
     //tunerContext.pangledx1 *= 0.9;
-    tunerContext.pangle = Math.log(1+tunerContext.avgFreq/100)/Math.log(2);
+    //tunerContext.pangle = 2*Math.PI*Math.log(1+tunerContext.avgFreq/100)/Math.log(2);
+    tunerContext.pangle = 2*Math.PI*Math.log((1+tunerContext.avgFreq)/100)/Math.log(2);
     tunerContext.doDraw();
     window.requestAnimationFrame(reDraw);
 }
