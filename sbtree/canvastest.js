@@ -10,13 +10,15 @@ var micInputContext = {
 
     ,audioAnalyse: function() {
         if(this.audioContext) {
-            this.analyser.getFloatFrequencyData(this.buf);
+            this.analyser.getFloatFrequencyData(this.freqBuf);
+            this.analyser.getByteTimeDomainData(this.timeBuf);
             this.bins = this.analyser.frequencyBinCount;
         }
     }
  
     ,audioSetup: function() {
-        this.buf = new Float32Array(this.buflen);
+        this.freqBuf = new Float32Array(this.buflen);
+        this.timeBuf = new Uint8Array(this.buflen);
         if(navigator.getUserMedia) {
             var me = this;
             var args = {audio:true};
@@ -363,18 +365,19 @@ var tunerContext = {
     }
 
     ,doDrawFFT: function() {
+        var bins = micInputContext.bins/2;
+        if(bins==0)return;
         this.context.strokeStyle = 'rgba(255,255,255,16)';
         this.context.beginPath();
         var w = this.canvas.width;
         var h = this.canvas.height;
-        var bins = micInputContext.bins/2;
         var diff = 1;
         var maxi = 0;
         var maxv = 0;
         for(var i=0; i<bins; i++) {
             var n = (1.0*i*w)/bins;
             this.context.moveTo(n , h);
-            var m = micInputContext.buf[i];
+            var m = micInputContext.freqBuf[i];
             var v = (m - micInputContext.analyser.minDecibels) * diff;
             if(v > maxv) {
                 maxv = v;
@@ -383,14 +386,58 @@ var tunerContext = {
             this.context.lineTo(n , h - v);
         }
         this.context.stroke();
-         
+       
+        //Compute mean value (dc component) 
+        var c = h;
+        var dc = 0.0;
+        for(var i=0; i<bins; i++) {
+            dc += micInputContext.timeBuf[i];
+        }
+        dc = dc/bins; 
+        //Count crossings past it
+        var crossings = 0;
+        for(var i=1; i<bins; i++) {
+            var v0 = micInputContext.timeBuf[i-1]-dc;
+            var v1 = micInputContext.timeBuf[i]-dc;
+            if(v0>0 && v1<=0) {
+                this.context.fillStyle = 'rgba(255,0,0,127)';
+                crossings = crossings + 1;
+            } else {
+                this.context.fillStyle = 'rgba(255,255,255,127)';
+            } 
+        }
+ 
+        this.context.beginPath();
+        for(var i=0; i<bins; i++) {
+            var n = (1.0*i*w)/bins;
+            var v = micInputContext.timeBuf[i]*2;
+            if(i==0) {
+                this.context.moveTo(n, c - v);
+            } else {
+                this.context.lineTo(n, c - v);
+            }
+        } 
+        this.context.stroke();
+
+        if(crossings > 0) {
+            var freq = bins/(1.0*crossings);
+            this.avgFreq = 0.99*this.avgFreq + 0.01*freq;
+        }
+        this.avgMaxi = 0.99*this.avgMaxi + 0.01*maxi;
+        var label1 = this.avgMaxi;
+        var label2 = this.avgFreq;
+
         this.context.fillStyle = 'rgba(255,255,255,127)';
         this.context.beginPath();
-        this.context.fillText(""+maxi, 75, this.canvas.height - 50);
+        this.context.fillText(label1, 75, this.canvas.height - 50);
+        this.context.fillText(label2, 75, this.canvas.height - 70);
+        this.context.fillText("!!BS numbers!!", 75, this.canvas.height - 90);
         this.context.fill();
     }
 
     ,init : function() {
+        this.avgFreq = 0;
+        this.avgMaxi = 0;
         this.findPrimes();
         this.doPrecomputePitchRatios();
         this.findLabels();
@@ -424,12 +471,12 @@ function doTuner() {
 function reDraw() {
     micInputContext.audioAnalyse();
     //Make the needle bounce around with acceleration,velocity,position
-    tunerContext.pangledx2 += Math.random()*0.002 - 0.001;
-    tunerContext.pangledx1 += tunerContext.pangledx2;
-    tunerContext.pangle += tunerContext.pangledx1;
-    tunerContext.pangledx2 *= 0.9;
-    tunerContext.pangledx1 *= 0.9;
-
+    //tunerContext.pangledx2 += Math.random()*0.002 - 0.001;
+    //tunerContext.pangledx1 += tunerContext.pangledx2;
+    //tunerContext.pangle += tunerContext.pangledx1;
+    //tunerContext.pangledx2 *= 0.9;
+    //tunerContext.pangledx1 *= 0.9;
+    tunerContext.pangle = Math.log(1+tunerContext.avgFreq/100)/Math.log(2);
     tunerContext.doDraw();
     window.requestAnimationFrame(reDraw);
 }
