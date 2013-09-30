@@ -7,13 +7,87 @@ function trylog(msg) {
 var micInputContext = {
     buflen: 2048
     ,bins: 0
+    ,samples: 0
+    ,crossings: 0
+    ,prevSample: 0
+
+    ,findAngle: function() {
+        var f = this.avgFreq * 100;
+        //Make the needle bounce around with acceleration,velocity,position
+        if(f==0.0) {
+            this.pangledx2 += Math.random()*0.002 - 0.001;
+            this.pangledx1 += tunerContext.pangledx2;
+            this.pangle += tunerContext.pangledx1;
+            this.pangledx2 *= 0.9;
+            this.pangledx1 *= 0.9;
+        } else {
+            //Pick shortest route to the angle mod 2pi
+            var newPangle = Math.log(f)/Math.log(2);
+/*
+            while(newPangle > 2.0) {
+                newPangle -= 1.0;
+            }
+            while(newPangle < 1.0) {
+                newPangle += 1.0;
+            }
+            newPangle *= 2*Math.PI;
+            var pangleDiff = newPangle - this.pangle;
+            while(pangleDiff > Math.PI) {
+                pangleDiff -= Math.PI;
+                newPangle -= Math.PI;
+            }
+            while(pangleDiff < -Math.PI) {
+                pangleDiff += Math.PI;
+                newPangle += Math.PI;
+            }
+*/ 
+//            this.pangle = 0.9*this.pangle + 0.1*newPangle;
+            this.pangle = newPangle;
+        }
+    }
+
+    ,countCrossings: function() {
+        //Compute mean value (dc component) 
+        var dc = 0.0;
+        for(var i=0; i<this.bins; i++) {
+            dc += this.timeBuf[i];
+        }
+        dc = dc/this.bins;
+ 
+        //Count measure average wavelength
+        var power = 0.0;
+        var newSamples = 0;
+        for(var i=0; i<this.bins; i++) {
+            var v = this.timeBuf[i]-dc;
+            power = power + v*v;
+            newSamples++;
+            //Going up past 0 with energy 500 units for wave
+            if(this.prevSample>0 && v<=0) {
+                //Increment crossings and samples for a mediant average
+                this.crossings++;
+                this.samples += newSamples;
+                newSamples = 0;
+                this.avgFreq = (1.0 * this.crossings)/(this.samples);
+                power = 0.0;
+                //Weigh past readings lower
+                this.crossings = 0.999 * this.crossings;
+                this.samples = 0.999 * this.samples;
+            }
+            this.prevSample = v;
+        }
+    }
 
     ,audioAnalyse: function() {
         if(this.audioContext) {
+            this.avgFreq = 0;
+            this.pangle = 0;
             this.analyser.getFloatFrequencyData(this.freqBuf);
             this.analyser.getByteTimeDomainData(this.timeBuf);
             this.bins = this.analyser.frequencyBinCount;
+            this.countCrossings();
+            this.findAngle();
         }
+ 
     }
  
     ,audioSetup: function() {
@@ -318,8 +392,8 @@ var tunerContext = {
         this.context.beginPath();
         this.context.lineWidth = 2;
         this.context.strokeStyle = 'rgba(255,255,255,128)';
-        var x1 = this.radius * 4 * Math.sin( this.pangle );
-        var y1 = this.radius * 4 * -Math.cos( this.pangle );
+        var x1 = this.radius * 4 * Math.sin( micInputContext.pangle );
+        var y1 = this.radius * 4 * -Math.cos( micInputContext.pangle );
         this.context.moveTo( this.cx, this.cy );
         this.context.lineTo( this.cx + x1, this.cy + y1 );
         this.context.stroke();
@@ -331,7 +405,7 @@ var tunerContext = {
         this.context.fillStyle = 'rgba(255,255,255,128)';
         this.context.textAlign = "left";
         this.context.font = 'Bold 12pt Verdana';
-        var angle = this.pangle;
+        var angle = micInputContext.pangle;
         while(angle < 0) {
           angle += 2*Math.PI;
         }
@@ -352,8 +426,8 @@ var tunerContext = {
 
     ,doDraw: function() {
         this.context.save();
-        var x1 =  this.radius * Math.sin( this.pangle );
-        var y1 = -this.radius * Math.cos( this.pangle );
+        var x1 =  this.radius * Math.sin( micInputContext.pangle );
+        var y1 = -this.radius * Math.cos( micInputContext.pangle );
         this.doClear();
         this.context.translate( -x1, -y1 );
         this.doPitchRatios();
@@ -372,41 +446,15 @@ var tunerContext = {
         var w = this.canvas.width;
         var h = this.canvas.height;
         var diff = 1;
-        var maxi = 0;
-        var maxv = 0;
         for(var i=0; i<bins; i++) {
             var n = (1.0*i*w)/bins;
             this.context.moveTo(n , h);
             var m = micInputContext.freqBuf[i];
             var v = (m - micInputContext.analyser.minDecibels) * diff;
-            if(v > maxv) {
-                maxv = v;
-                maxi = i;
-            }
             this.context.lineTo(n , h - v);
         }
         this.context.stroke();
-       
-        //Compute mean value (dc component) 
         var c = h;
-        var dc = 0.0;
-        for(var i=0; i<bins; i++) {
-            dc += micInputContext.timeBuf[i];
-        }
-        dc = dc/bins; 
-        //Count crossings past it
-        var crossings = 0;
-        for(var i=1; i<bins; i++) {
-            var v0 = micInputContext.timeBuf[i-1]-dc;
-            var v1 = micInputContext.timeBuf[i]-dc;
-            if(v0>0 && v1<=0) {
-                this.context.fillStyle = 'rgba(255,0,0,127)';
-                crossings = crossings + 1;
-            } else {
-                this.context.fillStyle = 'rgba(255,255,255,127)';
-            } 
-        }
- 
         this.context.beginPath();
         for(var i=0; i<bins; i++) {
             var n = (1.0*i*w)/bins;
@@ -419,17 +467,9 @@ var tunerContext = {
         } 
         this.context.stroke();
 
-        if(crossings > 0) {
-            var freq = bins/(1.0*crossings);
-            this.avgFreq = 0.99*this.avgFreq + 0.01*freq;
-        }
-        this.avgMaxi = 0.99*this.avgMaxi + 0.01*maxi;
-        var label1 = this.avgMaxi;
-        var label2 = this.avgFreq;
-
+        var label2 = micInputContext.avgFreq;
         this.context.fillStyle = 'rgba(255,255,255,127)';
         this.context.beginPath();
-        this.context.fillText(label1, 75, this.canvas.height - 50);
         this.context.fillText(label2, 75, this.canvas.height - 70);
         this.context.fillText("!!BS numbers!!", 75, this.canvas.height - 90);
         this.context.fill();
@@ -470,16 +510,6 @@ function doTuner() {
 
 function reDraw() {
     micInputContext.audioAnalyse();
-    //Make the needle bounce around with acceleration,velocity,position
-    if(tunerContext.avgMaxi==0.0) {
-        tunerContext.pangledx2 += Math.random()*0.002 - 0.001;
-        tunerContext.pangledx1 += tunerContext.pangledx2;
-        tunerContext.pangle += tunerContext.pangledx1;
-        tunerContext.pangledx2 *= 0.9;
-        tunerContext.pangledx1 *= 0.9;
-    } else {
-        tunerContext.pangle = 2*Math.PI*Math.log((1+tunerContext.avgFreq)/100)/Math.log(2);
-    }
     tunerContext.doDraw();
     window.requestAnimationFrame(reDraw);
 }
