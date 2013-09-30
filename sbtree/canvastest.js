@@ -9,7 +9,9 @@ var micInputContext = {
     ,bins: 0
     ,samples: 0
     ,crossings: 0
-    ,prevSample: 0
+    ,prevVal: 0
+    ,valMax: 0
+    ,valMin: 0
 
     ,findAngle: function() {
         var f = this.avgFreq * 100;
@@ -47,33 +49,34 @@ var micInputContext = {
     }
 
     ,countCrossings: function() {
-        //Compute mean value (dc component) 
-        var dc = 0.0;
-        for(var i=0; i<this.bins; i++) {
-            dc += this.timeBuf[i];
-        }
-        dc = dc/this.bins;
- 
         //Count measure average wavelength
-        var power = 0.0;
         var newSamples = 0;
         for(var i=0; i<this.bins; i++) {
-            var v = this.timeBuf[i]-dc;
-            power = power + v*v;
+            //Assume a centered input
+            var v = this.timeBuf[i]-127;
             newSamples++;
             //Going up past 0 with energy 500 units for wave
-            if(this.prevSample>0 && v<=0) {
+            if(this.prevVal>0 && v<=0) {
                 //Increment crossings and samples for a mediant average
-                this.crossings++;
-                this.samples += newSamples;
+                var m = this.valMax/128;
+                this.crossings += 1 * m;
+                this.samples += newSamples * m;
                 newSamples = 0;
                 this.avgFreq = (1.0 * this.crossings)/(this.samples);
-                power = 0.0;
-                //Weigh past readings lower
-                this.crossings = 0.999 * this.crossings;
-                this.samples = 0.999 * this.samples;
+                //Weigh past readings lower when we have more power
+                var w = 0.999; 
+                this.crossings = w * this.crossings;
+                this.samples = w  * this.samples;
             }
-            this.prevSample = v;
+            if(v > this.valMax) {
+                this.valMax = v;
+            }
+            if(v < this.valMin) {
+                this.valMin = v;
+            }
+            this.valMax = 0.999 * this.valMax;
+            this.valMin = 0.999 * this.valMin;
+            this.prevVal = v;
         }
     }
 
