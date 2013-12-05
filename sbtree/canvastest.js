@@ -5,7 +5,7 @@ function trylog(msg) {
 }
 
 var micInputContext = {
-    buflen: 512
+    buflen: 1024
     ,bins: 0
     ,samples: 0
     ,crossings: 0
@@ -13,50 +13,67 @@ var micInputContext = {
     ,valMax: 0
     ,valMin: 0
     ,avgFreq: 440 
-    ,pangle: 0
+    ,pitchAngle: 0
     ,avgCents : 1200 
+    ,maxBin : 0
+    ,maxBinValue : 0
 
-    ,countCrossings: function() {
-        //Count measure average wavelength
-        var newSamples = 0;
-        for(var i=0; i<this.bins; i++) {
-            //Assume a centered input
-            var v = this.timeBuf[i]-127;
-            newSamples++;
-            //Going up past 0 with energy 500 units for wave
-            if(this.prevVal>0 && v<=0) {
-                //Increment crossings and samples for a mediant average
-                var m = this.valMax/64;
-                this.crossings += 1 * m;
-                this.samples += newSamples * m;
-                newSamples = 0;
-                //In cycles per second.  ex:
-                // 44100 * cycles / sample
-                this.avgFreq = this.audioContext.sampleRate * this.crossings/this.samples;
-                //Weigh past readings lower when we have more power
-                var w = 0.99; 
-                this.crossings = w * this.crossings;
-                this.samples = w  * this.samples;
+    ,findFreq: function() {
+        var diff = 1.0;
+        var md = this.analyser.minDecibels;
+        var avgVal = 0.0;
+        //Initialize buffers
+        for(var i=0; i<this.buflen; i++) {
+            var m = this.freqBuf[i];
+            var v = (m - md) * diff;
+            var oldv = this.analysisRawBuf[i];
+            var vdist = ((v-oldv)*(v-oldv));
+            var ndist = 1/(vdist+0.00001);
+            var vclose = 1-ndist;
+            this.analysisRawBuf[i] = oldv*0.9;
+            this.analysisRawBuf[i] += v;
+            this.analysisRawBuf[i] *= vclose*0.6 * 0.1;
+            if(this.analysisRawBuf[i] < 0) {
+              this.analysisRawBuf[i] = 0.0;
             }
-            if(v > this.valMax) {
-                this.valMax = v;
+            this.analysisBuf[i] = 1.0;
+            avgVal += this.analysisRawBuf[i];
+        }
+        avgVal = avgVal/this.buflen;
+        for(var i=1; i<this.buflen; i++) {
+            var c = this.analysisRawBuf[i];
+            this.analysisBuf[i] = c/avgVal;
+        }
+        var hmax=3;
+        //Find the max value for correlated wave length (in samples)
+        for(var i=0; i<this.buflen; i++) {
+            for(var h=1; h<hmax; h++) {
+                var v = this.analysisRawBuf[i];
+                this.analysisBuf[i/h] *= v*h;
             }
-            if(v < this.valMin) {
-                this.valMin = v;
+        }
+        //Find max 
+        this.maxBinValue = 0;
+        this.maxBin = 0;      
+        var maxBinValue = 0;
+        var maxBin = 0;
+        for(var i=0; i<this.buflen; i++) {
+            if( this.analysisBuf[i] > maxBinValue) {
+                maxBinValue = this.analysisBuf[i];
+                maxBin = i;
             }
-            this.valMax = 0.99 * this.valMax;
-            this.valMin = 0.99 * this.valMin;
-            this.prevVal = v;
         }
-        this.avgCents = 1200*Math.log(this.avgFreq/440)/Math.log(2);
-        var c = this.avgCents;
-        while(c < 1200) {
-            c += 1200;
+        //Set pitch angle
+        if( maxBin > 0 ) {
+            this.maxBin = maxBin;
+            this.maxBinValue = maxBinValue;
+            var topitchAngle =
+                Math.PI*2 * 
+                ((1200*Math.log(this.maxBin)/Math.log(2)+0.5)%1200)/1200.0;
+            
+            this.pitchAngle = topitchAngle; //this.pitchAngle*0.8 + topitchAngle*0.2;
+            this.avgCents = Math.floor(1200*this.pitchAngle/(Math.PI*2));
         }
-        while(c > 2400) {
-            c -= 1200;
-        }
-        this.pangle = 0.9*this.pangle + 0.1 * 2*Math.PI*(Math.floor(c)%1200)/1200;
     }
 
     ,audioAnalyse: function() {
@@ -64,11 +81,13 @@ var micInputContext = {
             this.analyser.getFloatFrequencyData(this.freqBuf);
             this.analyser.getByteTimeDomainData(this.timeBuf);
             this.bins = this.analyser.frequencyBinCount;
-            this.countCrossings();
+            this.findFreq();
         }
     }
  
     ,audioSetup: function() {
+        this.analysisBuf = new Float32Array(this.buflen);
+        this.analysisRawBuf = new Float32Array(this.buflen);
         this.freqBuf = new Float32Array(this.buflen);
         this.timeBuf = new Uint8Array(this.buflen);
         if(navigator.getUserMedia) {
@@ -93,9 +112,9 @@ var tunerContext = {
     limit: 81
     ,tooComplex: 3.0
     ,density: 1.0
-    ,pangle: 0
-    ,pangledx1: 0
-    ,pangledx2: 0
+    ,pitchAngle: 0
+    ,pitchAngledx1: 0
+    ,pitchAngledx2: 0
 
     ,findPrimes : function() {
         this.primes = new Array()
@@ -370,8 +389,8 @@ var tunerContext = {
         this.context.beginPath();
         this.context.lineWidth = 2;
         this.context.strokeStyle = 'rgba(255,255,255,128)';
-        var x1 = this.radius * 4 * Math.sin( micInputContext.pangle );
-        var y1 = this.radius * 4 * -Math.cos( micInputContext.pangle );
+        var x1 = this.radius * 4 * Math.sin( micInputContext.pitchAngle );
+        var y1 = this.radius * 4 * -Math.cos( micInputContext.pitchAngle );
         this.context.moveTo( this.cx, this.cy );
         this.context.lineTo( this.cx + x1, this.cy + y1 );
         this.context.stroke();
@@ -383,7 +402,7 @@ var tunerContext = {
         this.context.fillStyle = 'rgba(255,255,255,128)';
         this.context.textAlign = "left";
         this.context.font = 'Bold 12pt Verdana';
-        var angle = micInputContext.pangle;
+        var angle = micInputContext.pitchAngle;
         while(angle < 0) {
           angle += 2*Math.PI;
         }
@@ -398,15 +417,15 @@ var tunerContext = {
         var note = ((Math.floor((cents-50)/100))+1)%12;
         var centsoff = (Math.floor(100*(cents - note*100)))/100;
         this.context.fillText(this.labels[note]+" "+centsoff+"¢",x,y+20);
-        this.context.fillText(hertz+"hz",x,y+40);
+        //this.context.fillText(hertz+"hz",x,y+40);
         this.context.fill();
         this.context.restore();
     }
 
     ,doDraw: function() {
         this.context.save();
-        var x1 =  this.radius * Math.sin( micInputContext.pangle );
-        var y1 = -this.radius * Math.cos( micInputContext.pangle );
+        var x1 =  this.radius * Math.sin( micInputContext.pitchAngle );
+        var y1 = -this.radius * Math.cos( micInputContext.pitchAngle );
         this.doClear();
         this.context.translate( -x1, -y1 );
         this.doPitchRatios();
@@ -422,20 +441,34 @@ var tunerContext = {
         if(bins==0)return;
         var w = this.canvas.width;
         var h = this.canvas.height;
+        var h2 = h/2;
         var diff = 1;
+        var c = h;
+        var difft = 0.5;
+
+        this.context.strokeStyle = 'rgba(255,127,127,16)';
+        this.context.beginPath();
+        this.context.moveTo(0 , h2);
+        for(var i=0; i<bins; i++) {
+            var n = (1.0*i*w)/bins;
+            //var m = micInputContext.freqBuf[i];
+            var v = micInputContext.analysisBuf[i]; 
+            this.context.lineTo(n , h2 - v);
+        }
+        this.context.stroke();
 
         this.context.strokeStyle = 'rgba(127,255,127,16)';
         this.context.beginPath();
         this.context.moveTo(0 , h);
+        var md = micInputContext.analyser.minDecibels;
         for(var i=0; i<bins; i++) {
             var n = (1.0*i*w)/bins;
             var m = micInputContext.freqBuf[i];
-            var v = (m - micInputContext.analyser.minDecibels) * diff;
+            var v = (m - md) * diff;
             this.context.lineTo(n , h - v);
         }
         this.context.stroke();
-        var c = h;
-        var difft = 0.5;
+
         this.context.beginPath();
         this.context.strokeStyle = 'rgba(127,127,255,16)';
         this.context.moveTo(0, c + 127);
@@ -448,10 +481,12 @@ var tunerContext = {
 
         var label1 = Math.floor(micInputContext.avgFreq) + "hz";
         var label2 = Math.floor(micInputContext.avgCents) + "¢";
+        var label3 = micInputContext.maxBin + " bin";
         this.context.fillStyle = 'rgba(255,255,255,127)';
         this.context.beginPath();
-        this.context.fillText(label1, 75, this.canvas.height - 70);
+        //this.context.fillText(label1, 75, this.canvas.height - 70);
         this.context.fillText(label2, 75, this.canvas.height - 90);
+        this.context.fillText(label3, 75, this.canvas.height - 110);
         this.context.fill();
     }
 
