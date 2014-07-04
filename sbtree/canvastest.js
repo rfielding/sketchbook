@@ -71,7 +71,10 @@ var micInputContext = {
                 Math.PI*2 * 
                 ((1200*Math.log(this.maxBin)/Math.log(2)+0.5)%1200)/1200.0;
             
-            this.pitchAngle = topitchAngle; //this.pitchAngle*0.8 + topitchAngle*0.2;
+            this.pitchAngle = this.pitchAngle*0.95 + topitchAngle*0.05;
+            if( this.pitchAngle > (Math.PI*2) ) {
+                this.pitchAngle -= Math.PI*2;
+            }
             this.avgCents = Math.floor(1200*this.pitchAngle/(Math.PI*2));
         }
     }
