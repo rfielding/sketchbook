@@ -5,7 +5,7 @@ function trylog(msg) {
 }
 
 var micInputContext = {
-    buflen: 1024
+    buflen: 512
     ,bins: 0
     ,samples: 0
     ,crossings: 0
@@ -21,28 +21,27 @@ var micInputContext = {
     ,findFreq: function() {
         var diff = 1.0;
         var md = this.analyser.minDecibels;
-        var avgVal = 0.0;
         //Initialize buffers
-        for(var i=0; i<this.buflen; i++) {
+        this.analysisRawBuf[0] = 0.0;
+        for(var i=1; i<this.buflen; i++) {
             var m = this.freqBuf[i];
             var v = (m - md) * diff;
-            var oldv = this.analysisRawBuf[i];
-            var vdist = ((v-oldv)*(v-oldv));
-            var ndist = 1/(vdist+0.00001);
-            var vclose = 1-ndist;
-            this.analysisRawBuf[i] = oldv*0.9;
-            this.analysisRawBuf[i] += v;
-            this.analysisRawBuf[i] *= vclose*0.6 * 0.1;
+            this.analysisRawBuf[i] = v;
             if(this.analysisRawBuf[i] < 0) {
               this.analysisRawBuf[i] = 0.0;
             }
-            this.analysisBuf[i] = 1.0;
-            avgVal += this.analysisRawBuf[i];
+            this.analysisBuf[i] = 0.0;
         }
-        avgVal = avgVal/this.buflen;
-        for(var i=1; i<this.buflen; i++) {
-            var c = this.analysisRawBuf[i];
-            this.analysisBuf[i] = c/avgVal;
+        for(var i=0; i<this.buflen; i++) {
+
+            this.analysisBuf[i] += 0.0001*this.analysisRawBuf[i]
+
+            //this.analysisBuf[i] += 0.001*this.analysisRawBuf[i/2];
+            //this.analysisBuf[i] += this.analysisRawBuf[i/3]/3;
+            //this.analysisBuf[i] += this.analysisRawBuf[i/4]/4;
+            //this.analysisBuf[i] += this.analysisRawBuf[i/5]/5;
+            //this.analysisBuf[i] += this.analysisRawBuf[i/8]/8;
+            //this.analysisBuf[i] += this.analysisRawBuf[i/16]/16;
         }
         var hmax=3;
         //Find the max value for correlated wave length (in samples)
@@ -64,17 +63,38 @@ var micInputContext = {
             }
         }
         //Set pitch angle
-        if( maxBin > 0 ) {
+        if( maxBin > 4 ) {
             this.maxBin = maxBin;
             this.maxBinValue = maxBinValue;
+
             var topitchAngle =
                 Math.PI*2 * 
                 ((1200*Math.log(this.maxBin)/Math.log(2)+0.5)%1200)/1200.0;
-            
-            this.pitchAngle = this.pitchAngle*0.95 + topitchAngle*0.05;
-            if( this.pitchAngle > (Math.PI*2) ) {
+
+            while( topitchAngle >= Math.PI ) {
+                topitchAngle -= Math.PI*2;
+            }
+            while( topitchAngle < -Math.PI) {
+                topitchAngle += Math.PI*2;
+            }
+            while( this.pitchAngle >= Math.PI ) {
                 this.pitchAngle -= Math.PI*2;
             }
+            while( this.pitchAngle < -Math.PI) {
+                this.pitchAngle += Math.PI*2;
+            }
+            if(topitchAngle - this.pitchAngle < -Math.PI) {
+                topitchAngle += 2*Math.PI
+            }
+            if(this.pitchAngle - topitchAngle < -Math.PI) {
+                this.pitchAngle += 2*Math.PI
+            }
+
+            a = (0.95 + maxBinValue/256)
+            b = 1 - a
+ 
+            this.pitchAngle = this.pitchAngle*a + topitchAngle*b;
+
             this.avgCents = Math.floor(1200*this.pitchAngle/(Math.PI*2));
         }
     }
@@ -440,7 +460,7 @@ var tunerContext = {
     }
 
     ,doDrawFFT: function() {
-        var bins = micInputContext.bins/2;
+        var bins = micInputContext.bins/4;
         if(bins==0)return;
         var w = this.canvas.width;
         var h = this.canvas.height;
