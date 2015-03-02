@@ -208,7 +208,7 @@ var tunerContext = {
     ,canvasSetup: function() {
         this.canvas = document.getElementById('myCanvas');
         this.context = this.canvas.getContext('2d');
-        this.context.font = '8pt Verdana';
+        this.context.font = '18pt Verdana';
         this.cx = this.canvas.width/2;
         this.cy = this.canvas.height/2;
         this.radius;
@@ -222,7 +222,7 @@ var tunerContext = {
     }
 
     ,doCentsBackgroundFine: function() {
-        this.context.strokeStyle = '#000000';
+        this.context.strokeStyle = '#ffffff';
         this.context.lineWidth = 1;
         this.radiusExtra = 10;
         var increments = 120;
@@ -357,7 +357,7 @@ var tunerContext = {
             ctx.save();
             ctx.translate( cx,cy );
             ctx.translate( x1,y1 );
-            ctx.fillStyle = '#ffff00';
+            ctx.fillStyle = '#000000';
             if(angle > Math.PI) {
                 ctx.rotate( Math.PI/2 + angle );
                 ctx.fillText( n+":"+d, 0-20, 0+3.25 );
@@ -366,7 +366,7 @@ var tunerContext = {
                 ctx.fillText( n+":"+d, 0+20, 0+3.25 );
             }
             ctx.fillStyle = '#ff0000';
-            ctx.fillText( "|", 0, 0+3.25 );
+            //ctx.fillText( "|", -30, 0+3.25 );
             ctx.restore();
         }
 
@@ -402,8 +402,8 @@ var tunerContext = {
 
     ,doClear: function() {
         this.context.beginPath();
-        this.context.fillStyle = '#000000';
-        this.context.strokeStyle = '#ffff00';
+        this.context.fillStyle = '#ffffff';
+        this.context.strokeStyle = '#000000';
         this.context.fillRect( 0, 0, this.canvas.width, this.canvas.height );
         this.context.stroke();
     }
@@ -450,7 +450,8 @@ var tunerContext = {
         var x1 =  this.radius * Math.sin( micInputContext.pitchAngle );
         var y1 = -this.radius * Math.cos( micInputContext.pitchAngle );
         this.doClear();
-        this.context.translate( -x1, -y1 );
+        this.context.translate( this.radius*0.5, this.radius*0.5 );
+        this.context.scale(0.5, 0.5);
         this.doPitchRatios();
         this.doDrawIntonationWheel();
         this.doDrawThisMark();
